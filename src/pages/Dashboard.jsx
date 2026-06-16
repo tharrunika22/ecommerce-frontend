@@ -1,8 +1,9 @@
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
-import { Outlet } from "react-router-dom";
+import { Outlet,useLocation } from "react-router-dom"; 
 
-function Dashboard() {
+function Dashboard() { 
+  const location = useLocation();
   const role = localStorage.getItem("role");
   const username = localStorage.getItem("username");
 
@@ -26,34 +27,25 @@ function Dashboard() {
         }}
       >
         {/* Welcome Card */}
-        <div
-          style={{
-            backgroundColor: "white",
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-            marginBottom: "25px",
-          }}
-        >
-          <h2
-            style={{
-              margin: 0,
-              color: "#111827",
-            }}
-          >
-            👋 Hi, {role}
-          </h2>
+        {location.pathname === "/dashboard" && (
+  <div
+    style={{
+      backgroundColor: "white",
+      borderRadius: "16px",
+      padding: "24px",
+      boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+      marginBottom: "25px",
+    }}
+  >
+    <h2>
+      👋 Hi, {role}
+    </h2>
 
-          <p
-            style={{
-              marginTop: "10px",
-              color: "#6b7280",
-              fontSize: "16px",
-            }}
-          >
-            Welcome back, <strong>{username}</strong>
-          </p>
-        </div>
+    <p>
+      Welcome back, <strong>{username}</strong>
+    </p>
+  </div>
+)}
 
         {/* Page Content */}
         <div

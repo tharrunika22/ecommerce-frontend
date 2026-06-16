@@ -1,8 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
-  Package,
-  ShoppingBag,
+  Package, 
+  ShoppingCart,
+  ShoppingBag, 
+  MapPin,
   User,
 } from "lucide-react";
 
@@ -20,12 +22,22 @@ function Sidebar() {
       name: "Products",
       path: "/dashboard/products",
       icon: <Package size={20} />,
+    }, 
+    {
+  name: "Cart",
+  path: "/dashboard/cart",
+  icon: <ShoppingCart size={20} />,
     },
     {
       name: "Orders",
       path: "/dashboard/orders",
       icon: <ShoppingBag size={20} />,
-    },
+    }, 
+    {
+  name: "Address",
+  path: "/dashboard/address",
+  icon: <MapPin size={20} />,
+},
     {
       name: "Profile",
       path: "/dashboard/profile",
@@ -37,7 +49,7 @@ function Sidebar() {
     <div
       style={{
         width: "240px",
-        height: "calc(100vh - 60px)",
+        height: "calc(140vh - 60px)",
         background: "#1f2937",
         color: "white",
         padding: "24px 16px",

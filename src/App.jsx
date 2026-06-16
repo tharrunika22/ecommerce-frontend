@@ -5,7 +5,12 @@ import Dashboard from "./pages/Dashboard";
 import ProductList from "./components/ProductList";
 import Orders from "./pages/Orders"; 
 import Signup from "./pages/Signup";
-import Profile from "./pages/Profile";
+import Profile from "./pages/profile"; 
+import Cart from "./pages/Cart"; 
+import Address from "./pages/Address"; 
+import ForgotPassword from "./pages/ForgetPassword";
+import OrderSuccess from "./pages/OrderSuccess";
+import OrderFailed from "./pages/OrderFailed";
 
 function App() {
   return (
@@ -14,7 +19,13 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />  
         <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard" element={<Dashboard />}>
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
+        <Route path="/order-failed" element={<OrderFailed />} />
+        <Route path="/dashboard" element={<Dashboard />}> 
+          <Route path="cart" element={<Cart />} />  
+          <Route path="order-success" element={<OrderSuccess />} />
+          <Route path="order-failed" element={<OrderFailed />} />
           <Route
             index
             element={
@@ -32,6 +43,10 @@ function App() {
           <Route
             path="orders"
             element={<Orders />}
+          /> 
+          <Route
+            path="address"
+            element={<Address />}
           />
           <Route
             path="profile"

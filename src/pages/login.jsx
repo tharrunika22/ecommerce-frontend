@@ -26,9 +26,13 @@ function Login() {
         response.data.access_token
       );
       localStorage.setItem(
-  "role",
-  response.data.user.role
-);
+        "refresh_token",
+        response.data.refresh_token
+      );
+      localStorage.setItem(
+        "role",
+        response.data.user.role
+      );
       localStorage.setItem(
         "username",
         response.data.user.username
@@ -45,6 +49,7 @@ function Login() {
       console.log(response.data);
       navigate("/dashboard");
     } catch (error) {
+      console.error(error);
       alert(
         error.response?.data?.detail ||
         "Login Failed"
@@ -140,7 +145,25 @@ return (
             outline: "none",
             fontSize: "14px",
           }}
-        />
+        /> 
+        <p
+  style={{
+    textAlign: "right",
+    marginBottom: "15px",
+  }}
+>
+  <span
+    onClick={() => navigate("/forgot-password")}
+    style={{
+      color: "#6366f1",
+      cursor: "pointer",
+      fontSize: "14px",
+      fontWeight: "500",
+    }}
+  >
+    Forgot Password?
+  </span>
+</p>
 
         {/* Button */}
         <button
