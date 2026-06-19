@@ -11,7 +11,7 @@ export default function OrderSuccess() {
       <p>Your order has been placed.</p>
 
       <button
-        onClick={() => navigate("/dashboard/orders")}
+        onClick={() => navigate("/orders")}
       >
         View Orders
       </button>

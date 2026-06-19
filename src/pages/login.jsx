@@ -47,7 +47,13 @@ function Login() {
       alert("Login Successful");
 
       console.log(response.data);
-      navigate("/dashboard");
+      const role = response.data.user.role;
+
+if (role === "vendor") {
+  navigate("/vendor/dashboard");
+} else {
+  navigate("/products");
+}
     } catch (error) {
       console.error(error);
       alert(

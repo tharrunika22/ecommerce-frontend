@@ -13,34 +13,30 @@ function Sidebar() {
   const location = useLocation();
 
   const menuItems = [
-    {
-      name: "Dashboard",
-      path: "/dashboard",
-      icon: <LayoutDashboard size={20} />,
-    },
+    
     {
       name: "Products",
-      path: "/dashboard/products",
+      path: "/products",
       icon: <Package size={20} />,
     }, 
     {
   name: "Cart",
-  path: "/dashboard/cart",
+  path: "/cart",
   icon: <ShoppingCart size={20} />,
     },
     {
       name: "Orders",
-      path: "/dashboard/orders",
+      path: "/orders",
       icon: <ShoppingBag size={20} />,
     }, 
     {
   name: "Address",
-  path: "/dashboard/address",
+  path: "/address",
   icon: <MapPin size={20} />,
 },
     {
       name: "Profile",
-      path: "/dashboard/profile",
+      path: "/profile",
       icon: <User size={20} />,
     },
   ];
@@ -49,7 +45,7 @@ function Sidebar() {
     <div
       style={{
         width: "240px",
-        height: "calc(140vh - 60px)",
+        height: "calc(330vh - 60px)",
         background: "#1f2937",
         color: "white",
         padding: "24px 16px",

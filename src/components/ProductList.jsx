@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import api from "../api/api";
 import { useNavigate } from "react-router-dom"; 
 
 function ProductList() {
@@ -17,212 +18,355 @@ function ProductList() {
   }, []);
 
   const fetchProducts = async () => {
-    const response = await axios.get("http://127.0.0.1:8000/products/");
+    const response =  await api.get("/products/");
+
     setProducts(response.data);
   }; 
   const addToCart = async (product) => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    navigate("/login");
-    return;
-  }
 
   try {
-    const response = await fetch("http://localhost:8000/cart/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
+
+    await api.post(
+      "/cart/",
+      {
         product_id: product.id,
         quantity: 1,
-      }),
-    });
-
-    if (response.ok) {
-      alert("Added to cart");
-    } else {
-      const error = await response.text();
-      alert("Error: " + error);
-    }
-  } catch (err) {
-    console.error("Error adding to cart:", err);
-    alert("Failed to add item to cart");
-  }
-}; 
-const fetchAddresses = async () => {
-  const token = localStorage.getItem("token");
-
-  console.log("Token from localStorage:", token);
-
-  if (!token) {
-    alert("No authentication token found. Please log in again.");
-    navigate("/login");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      "http://localhost:8000/address/",
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
       }
     );
 
-    console.log("Address fetch status:", response.status);
+    alert("Added to cart");
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Address fetch error response:", errorText);
-      throw new Error(`Error: ${response.status} - ${errorText}`);
-    }
+  } catch (err) {
 
-    const data = await response.json();
-    console.log("Addresses fetched:", data);
-    setAddresses(data);
-  } catch (error) {
-    console.error("Failed to fetch addresses:", error);
-    alert("Failed to fetch addresses: " + error.message);
+    console.error(
+      "Error adding to cart:",
+      err
+    );
+
+    alert(
+      err.response?.data?.detail ||
+      "Failed to add item to cart"
+    );
+  }
+};
+  const fetchAddresses = async () => {
+
+  try {
+
+    const response =
+      await api.get("/address/");
+
+    console.log(
+      "Addresses fetched:",
+      response.data
+    );
+
+    setAddresses(response.data);
+
+    return true;
+      } catch (error) {
+
+    console.error(
+      "Failed to fetch addresses:",
+      error
+    );
+
+    alert(
+      error.response?.data?.detail ||
+      "Failed to fetch addresses"
+    );
+
+    navigate('/login');
+
+    return false;
   }
 };
 
-  const placeOrder = async (product) => {
-    console.log("BUY NOW CLICKED", product);
-    const token = localStorage.getItem("token");
-    console.log("USER ID FROM STORAGE:", localStorage.getItem("user_id"));
+  const placeOrder = async (paymentResponse) => {
 
-    const user_id = Number(localStorage.getItem("user_id"));
+  console.log(
+    "paymentResponse received:",
+    paymentResponse
+  );
 
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+  if (!paymentResponse) {
+    console.error(
+      "paymentResponse is undefined"
+    );
+    return;
+  }
 
-    if (!selectedAddress) {
-      alert("Please select a delivery address");
-      return;
-    }
+  console.log(
+    "USER ID:",
+    localStorage.getItem("user_id")
+  );
 
-    try {
-      const response = await fetch("http://localhost:8000/orders/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+  const user_id = Number(
+    localStorage.getItem("user_id")
+  );
+
+  if (!selectedAddress) {
+
+    alert(
+      "Please select a delivery address"
+    );
+
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await api.post(
+        "/orders/",
+        {
           user_id,
           product_id: selectedProduct.id,
           quantity,
-          address: `${selectedAddress.address_line}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.pincode}`,
-        }),
-      });
 
-      const text = await response.text();
-      console.log("STATUS:", response.status);
-      console.log("RESPONSE:", text);
+          address:
+            `${selectedAddress.address_line},
+             ${selectedAddress.city},
+             ${selectedAddress.state},
+             ${selectedAddress.pincode}`,
 
-      if (response.ok) { 
-        setShowPopup(false); 
-        setShowSummary(false);
-        navigate("/dashboard/orders");
-      } else {
-        alert(text);
-      }
-    } catch (error) {
-      console.error("Error placing order:", error);
-      alert("Error placing order. Please try again.");
-    }
-  }; 
-  const openRazorpay = async () => {
-  const token = localStorage.getItem("token");
+          // optional: save payment details
+          payment_id:
+            paymentResponse.razorpay_payment_id,
+
+          razorpay_order_id:
+            paymentResponse.razorpay_order_id
+        }
+      );
+
+
+    console.log(
+      "Order created:",
+      response.data
+    );
+
+
+    setShowPopup(false);
+    setShowSummary(false);
+
+
+    navigate("/order-success");
+
+
+  } catch (error) {
+
+    console.error(
+      "Error placing order:",
+      error
+    );
+
+    alert(
+      error.response?.data?.detail ||
+      "Error placing order"
+    );
+  }
+};
+  
+const openRazorpay = async () => {
 
   try {
-    const totalAmount = selectedProduct.price * quantity;
 
-    const response = await fetch(
-      "http://localhost:8000/payments/create-razorpay-order",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+    const totalAmount =
+      selectedProduct.price * quantity;
+
+    const response =
+      await api.post(
+        "/payments/create-razorpay-order",
+        {
           amount: totalAmount,
-        }),
+        }
+      );
+
+
+    const order = response.data;
+
+
+    const options = {
+
+      key: "rzp_test_T3UYaUt3w1wIoS",
+
+      amount: order.amount,
+
+      currency: order.currency,
+
+      order_id: order.id,
+
+      name: "My Shop",
+
+      description: selectedProduct.name,
+
+
+      handler: async function(paymentResponse) {
+
+
+        // IMPORTANT FIX
+        paymentResponse.razorpay_order_id =
+          order.id;
+
+
+        console.log(
+          "RAZORPAY RESPONSE",
+          paymentResponse
+        );
+
+
+        const verify =
+          await verifyPayment(paymentResponse);
+
+
+
+        if (verify?.verified) {
+
+          await placeOrder(paymentResponse);
+
+        } 
+        else {
+
+          navigate("/order-failed");
+
+        }
+
+      },
+
+
+      prefill: {
+        name: localStorage.getItem("name") || "",
+        email: localStorage.getItem("email") || "",
+      },
+
+
+      theme:{
+        color:"#8b5cf6"
+      }
+
+    };
+
+
+
+    const rzp =
+      new window.Razorpay(options);
+
+
+
+    rzp.on(
+      "payment.failed",
+      function(error) {
+
+        console.log(
+          "Payment Failed",
+          error
+        );
+
+        navigate("/order-failed");
+
       }
     );
 
-    const order = await response.json();
 
-    const options = {
-      key: "rzp_test_T1nCpnhYiBkee4",
-      amount: order.amount,
-      currency: order.currency,
-      order_id: order.order_id,
-      name: "My Shop",
-      description: selectedProduct.name,
 
-      handler: async function (response) {
-        const verify = await verifyPayment(response);
-
-        if (verify?.verified) {
-          await placeOrder();
-          navigate("/order-success");
-        } else {
-          navigate("/order-failed");
-        }
-      },
-    };
-
-    const rzp = new window.Razorpay(options);
     rzp.open();
 
-  } catch (error) {
+
+
+  } catch(error){
+
     console.error(error);
-    alert("Unable to start payment");
+
+    alert(
+      "Unable to start payment"
+    );
+
   }
 };
 
-const verifyPayment = async (paymentResponse) => {
+const verifyPayment = async(paymentResponse)=>{
 
-  try {
 
-    const response = await fetch(
-      "http://localhost:8000/payments/verify-payment",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(paymentResponse),
-      }
-    );
+try{
 
-    const result = await response.json();
 
-    if (result.verified) {
+const user_id =
+Number(localStorage.getItem("user_id"));
 
-      await placeOrder();
 
-    } else {
 
-      alert("Payment verification failed");
-    }
+const amount =
+selectedProduct.price * quantity;
 
-  } catch (error) {
 
-    console.error(error);
 
-    alert("Verification failed");
-  }
+console.log(
+"VERIFY DATA",
+{
+razorpay_order_id:
+paymentResponse.razorpay_order_id,
+
+razorpay_payment_id:
+paymentResponse.razorpay_payment_id,
+
+razorpay_signature:
+paymentResponse.razorpay_signature,
+
+user_id,
+amount
+}
+);
+
+
+
+const response =
+await api.post(
+"/payments/verify-payment",
+{
+
+razorpay_order_id:
+paymentResponse.razorpay_order_id,
+
+
+razorpay_payment_id:
+paymentResponse.razorpay_payment_id,
+
+
+razorpay_signature:
+paymentResponse.razorpay_signature,
+
+
+user_id,
+
+amount
+
+}
+);
+
+
+
+return response.data;
+
+
+
+}
+catch(error){
+
+
+console.log(
+"VERIFY ERROR",
+error.response?.data
+);
+
+
+return {
+verified:false
+};
+
+
+}
+
 };
 
   return (
@@ -255,15 +399,17 @@ const verifyPayment = async (paymentResponse) => {
               }}
             >
               <img
-                src="https://picsum.photos/300"
-                alt={product.name}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: "8px",
-                }}
-              />
+  src={product.images?.[0] || "https://picsum.photos/300"}
+  alt={product.name}
+  onClick={() => navigate(`/products/${product.id}`)}
+  style={{
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    borderRadius: "8px",
+    cursor: "pointer",
+  }}
+/>
             </div>
 
             <div
@@ -336,31 +482,40 @@ const verifyPayment = async (paymentResponse) => {
                   Cart
                 </button>
 
-                <button 
-                  disabled={product.stock === 0}
-                  onClick={async () => {
-                  setSelectedProduct(product);
-                  setQuantity(1);
+                <button
+  disabled={product.stock === 0}
+  onClick={async () => {
+    const token = localStorage.getItem("token");
 
-                 await fetchAddresses();
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
-                 setSelectedAddress(null);
-                 setShowPopup(true);
-               }}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    backgroundColor: "#ddd6fe",
-                    color: "#5b21b6",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    transition: "0.2s ease",
-                  }}
-                >
-                  Buy
-                </button>
+    setSelectedProduct(product);
+    setQuantity(1);
+
+    const success = await fetchAddresses();
+
+    if (!success) return;
+
+    setSelectedAddress(null);
+    setShowPopup(true);
+  }}
+  style={{
+    flex: 1,
+    padding: "12px",
+    backgroundColor: "#ddd6fe",
+    color: "#5b21b6",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    transition: "0.2s ease",
+  }}
+>
+  Buy
+</button>
               </div>
             </div>
           </div>

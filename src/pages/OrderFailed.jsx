@@ -12,7 +12,7 @@ export default function OrderFailed() {
       <p>Please try again.</p>
 
       <button
-        onClick={() => navigate("/dashboard/products")}
+        onClick={() => navigate("/products")}
       >
         Back To Products
       </button>

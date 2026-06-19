@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 
 function Cart() {
   const [items, setItems] = useState([]);
@@ -19,125 +20,290 @@ function Cart() {
     const data = await response.json();
     setItems(data);
   };
-return (
-  <div>
-    <h2
-      style={{
-        marginBottom: "20px",
-        color: "#111827",
-      }}
-    >
-      🛒 My Cart
-    </h2>
+const handleRemove = async (cartId) => {
+  try {
+    const token = localStorage.getItem("token");
 
-    {items.length === 0 ? (
-      <div
-        style={{
-          backgroundColor: "#fff",
-          padding: "30px",
-          borderRadius: "12px",
-          textAlign: "center",
-          color: "#6b7280",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-        }}
-      >
-        No items in cart.
+    await axios.delete(
+      `http://localhost:8000/cart/${cartId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setItems((prev) =>
+      prev.filter((item) => item.id !== cartId)
+    );
+  } catch (err) {
+    console.error(err);
+  }
+}; 
+const handleCheckout = async () => {
+
+  try {
+
+    const token = localStorage.getItem("token");
+
+
+    const totalAmount = items.reduce((acc, item) => {
+      const price = Number(item.product?.price || 0);
+      return acc + price * item.quantity;
+    }, 0);
+
+
+
+    // Create Razorpay Order
+
+    const response = await axios.post(
+      "http://localhost:8000/payments/create-razorpay-order",
+      {
+        amount: totalAmount
+      },
+      {
+        headers:{
+          Authorization:`Bearer ${token}`
+        }
+      }
+    );
+
+
+    const order = response.data;
+
+    console.log("Response", order)
+
+    const options = {
+
+      key: "rzp_test_T3UYaUt3w1wIoS",
+
+      amount: order.amount,
+
+      currency: order.currency,
+
+      name: "My Store",
+
+      description: "Cart Payment",
+
+      order_id: order.id,
+
+
+      handler: async function(paymentResponse){
+        console.log("Response2",paymentResponse)  
+
+        // verify payment
+
+        await axios.post(
+          "http://localhost:8000/payments/verify-payment",
+          {
+            razorpay_order_id:
+              paymentResponse.razorpay_order_id,
+
+            razorpay_payment_id:
+              paymentResponse.razorpay_payment_id,
+
+            razorpay_signature:
+              paymentResponse.razorpay_signature,
+
+            user_id: parseInt(localStorage.getItem("user_id")),
+            amount: totalAmount
+          },
+          {
+            headers:{
+              Authorization:`Bearer ${token}`
+            }
+          }
+        );
+
+
+        alert("Payment Successful");
+
+
+      },
+
+
+      prefill:{
+        name:"",
+        email:"",
+        contact:""
+      },
+
+
+      theme:{
+        color:"#7c3aed"
+      }
+
+    };
+
+
+
+    const razorpay = new window.Razorpay(options);
+
+    razorpay.open();
+
+
+
+  }
+  catch(error){
+
+    console.log(error);
+
+  }
+
+};
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-3xl p-8 shadow-lg">
+        <h1 className="text-3xl font-bold">🛒 My Cart</h1>
+        <p className="mt-2 text-violet-100">
+          Review your selected products before checkout
+        </p>
       </div>
-    ) : (
-      <div
-        style={{
-          display: "grid",
-          gap: "20px",
-        }}
-      >
-        {items.map((item) => {
-          const product = item.product || {};
-          const price = Number(product.price || 0);
-          const itemTotal = price * (Number(item.quantity) || 0);
 
-          return (
-            <div
-              key={item.id}
-              style={{
-                backgroundColor: "#ffffff",
-                borderRadius: "16px",
-                padding: "20px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                border: "1px solid #e5e7eb",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "12px",
-                }}
-              >
-                <div>
-                  <h3 style={{ margin: 0, color: "#1f2937" }}>{product.name || `Product #${item.product_id}`}</h3>
-                  <div style={{ color: "#6b7280", fontSize: "14px" }}>{product.description}</div>
-                </div>
+      {items.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center shadow-md">
+          <div className="text-6xl mb-4">🛒</div>
+          <h2 className="text-xl font-semibold text-gray-700">
+            Your cart is empty
+          </h2>
+          <p className="text-gray-500 mt-2">
+            Start shopping and add products to your cart.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-6">
+            {items.map((item) => {
+              const product = item.product || {};
+              const price = Number(product.price || 0);
+              const total = price * item.quantity;
 
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: 700, color: "#111827" }}>${price.toLocaleString()}</div>
-                  <div style={{ marginTop: "6px", fontSize: "13px", color: "#6b7280" }}>Stock: {product.stock ?? "-"}</div>
-                </div>
-              </div>
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 p-6"
+                >
+                  <div className="flex flex-col md:flex-row justify-between gap-6">
+                    {/* Left */}
+                    <div className="flex gap-5">
+                      <div className="w-24 h-24 bg-gradient-to-br from-violet-100 to-purple-100 rounded-2xl flex items-center justify-center text-4xl">
+                        📦
+                      </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>
-                <div style={{ color: "#374151" }}>
-                  <p style={{ margin: 0 }}><strong>Quantity:</strong> {item.quantity}</p>
-                  <p style={{ margin: 0 }}><strong>Cart Item ID:</strong> {item.id}</p>
-                  <p style={{ margin: 0 }}><strong>User ID:</strong> {item.user_id}</p>
-                </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800">
+                          {product.name}
+                        </h3>
 
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "14px", color: "#111827", fontWeight: 700 }}>${itemTotal.toLocaleString()}</div>
-                  <div style={{ marginTop: "10px", display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-                    <button style={{ backgroundColor: "#ddd6fe", color: "#5b21b6", border: "none", padding: "10px 18px", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>
-                      Checkout
-                    </button>
-                    <button style={{ backgroundColor: "#fee2e2", color: "#dc2626", border: "none", padding: "10px 18px", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>
-                      Remove
-                    </button>
+                        <p className="text-gray-500 mt-2">
+                          {product.description}
+                        </p>
+
+                        <div className="flex gap-3 mt-4 flex-wrap">
+                          <span className="px-3 py-1 bg-violet-100 text-violet-700 rounded-full text-sm font-medium">
+                            Qty: {item.quantity}
+                          </span>
+
+                          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                            Stock: {product.stock}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right */}
+                    <div className="flex flex-col justify-between items-end">
+                      <div className="text-right">
+                        <p className="text-gray-500 text-sm">
+                          Price per item
+                        </p>
+
+                        <h3 className="text-2xl font-bold text-gray-800">
+                          ₹{price}
+                        </h3>
+
+                        <p className="mt-2 text-lg font-semibold text-violet-600">
+                          Total: ₹{total}
+                        </p>
+                      </div>
+
+                      <div className="flex gap-3 mt-5">
+                        <button
+ onClick={handleCheckout}
+ className="px-5 py-2 rounded-xl bg-violet-600 text-white"
+>
+Checkout
+</button>
+
+                        <button
+  onClick={() => handleRemove(item.id)}
+  className="px-5 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-600 font-semibold transition"
+>
+  Remove
+</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
 
-        {/* Cart summary */}
-        <CartSummary items={items} />
-      </div>
-    )}
-  </div>
-);
-  
-  
+          <CartSummary 
+          items={items} 
+            handleCheckout={handleCheckout}
+          />
+        </>
+      )}
+    </div>
+  );
 }
 
-export default Cart;
-
-function CartSummary({ items }) {
-  const total = items.reduce((acc, item) => {
+function CartSummary({ items,handleCheckout}) {
+  const totalAmount = items.reduce((acc, item) => {
     const price = Number(item.product?.price || 0);
-    const qty = Number(item.quantity || 0);
-    return acc + price * qty;
+    return acc + price * item.quantity;
   }, 0);
 
-  return (
-    <div style={{ marginTop: "12px", background: "#fff", padding: "18px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", maxWidth: "420px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", color: "#6b7280" }}>
-        <div>Items</div>
-        <div>{items.length}</div>
-      </div>
+  const totalItems = items.reduce(
+    (acc, item) => acc + item.quantity,
+    0
+  );
 
-      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "18px", color: "#111827" }}>
-        <div>Total</div>
-        <div>${total.toLocaleString()}</div>
+  return (
+    <div className="bg-white rounded-3xl shadow-md p-8 border border-gray-100">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        Cart Summary
+      </h2>
+
+      <div className="space-y-4">
+        <div className="flex justify-between text-gray-600">
+          <span>Total Products</span>
+          <span>{items.length}</span>
+        </div>
+
+        <div className="flex justify-between text-gray-600">
+          <span>Total Quantity</span>
+          <span>{totalItems}</span>
+        </div>
+
+        <hr />
+
+        <div className="flex justify-between text-2xl font-bold text-violet-600">
+          <span>Grand Total</span>
+          <span>₹{totalAmount}</span>
+        </div>
+
+        <button
+ onClick={handleCheckout}
+ className="w-full mt-6 bg-violet-600 text-white py-3 rounded-xl"
+>
+Proceed to Checkout
+</button>
       </div>
     </div>
   );
 }
+
+export default Cart;
